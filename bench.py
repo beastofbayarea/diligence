@@ -14,6 +14,10 @@ import json
 import sys
 import os
 import re
+from src import env_loader
+
+# Load .env automatically if it exists
+env_loader.load_env()
 
 
 def normalize(s):

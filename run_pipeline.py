@@ -9,7 +9,10 @@ Usage:
 """
 import argparse
 import os
-from src import extractor, verify, memo
+from src import extractor, verify, memo, env_loader
+
+# Load .env automatically if it exists
+env_loader.load_env()
 
 # Prefer model_extractor when configured (MODEL_API_URL + GEMINI_API_KEY); fallback to heuristic extractor
 try:
