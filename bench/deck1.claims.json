@@ -1,0 +1,4 @@
+[
+  { "claim": "Company reported $5M in revenue in 2023 in the 10-K filing.", "source_file": "deck1.pdf", "page": 2 },
+  { "claim": "Product has 120,000 monthly active users.", "source_file": "deck1.pdf", "page": 4 }
+]

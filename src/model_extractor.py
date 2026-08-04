@@ -60,11 +60,21 @@ def extract_with_model(pdf_paths: List[str]) -> Optional[List[dict]]:
             'required': ['claim', 'source_file', 'page']
         }
     }
-    payload = {
-        'files': files_payload,
-        'response_schema': response_schema,
-        'instructions': 'Extract falsifiable claims from these PDFs. Return JSON matching response_schema.'
-    }
+    # Use prompts helper if available to build a clear prompt
+    try:
+        from src import prompts
+        prompt_text = prompts.build_prompt(files_payload)
+        payload = {
+            'files': files_payload,
+            'response_schema': response_schema,
+            'prompt': prompt_text
+        }
+    except Exception:
+        payload = {
+            'files': files_payload,
+            'response_schema': response_schema,
+            'instructions': 'Extract falsifiable claims from these PDFs. Return JSON matching response_schema.'
+        }
     headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
     try:
         resp = requests.post(model_url, headers=headers, data=json.dumps(payload), timeout=120)
