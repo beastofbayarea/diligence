@@ -106,7 +106,16 @@ def extract_with_model(pdf_paths: List[str]) -> Optional[List[dict]]:
             else:
                 print('Unexpected model response format')
                 return None
-        # Basic validation
+        # Validate schema if possible
+        try:
+            from src import prompts, utils
+            schema = prompts.RESPONSE_SCHEMA
+            if not utils.validate_schema(claims, schema):
+                print('Model returned JSON that does not match expected schema')
+                return None
+        except Exception:
+            pass
+        # Basic validation and normalize
         out = []
         for c in claims:
             if not isinstance(c, dict):

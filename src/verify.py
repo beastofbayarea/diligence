@@ -29,6 +29,18 @@ def verify(claims_path, out_checked='claims_checked.json', out_questions='questi
     checked = []
     questions = ['# Questions (unverifiable claims)\n']
     use_edgar = os.environ.get('USE_EDGAR') == '1' and EDGAR_AVAILABLE
+    # Prepare for optional model-based verification
+    try:
+        from src import model_verifier
+    except Exception:
+        model_verifier = None
+    # If model verifier available and EDGAR not used, we can send batch verification
+    model_checks = None
+    if use_edgar is False and model_verifier is not None:
+        try:
+            model_checks = model_verifier.verify_with_model(claims)
+        except Exception:
+            model_checks = None
     for c in claims:
         text = c.get('claim','')
         c_checked = dict(c)
@@ -36,21 +48,27 @@ def verify(claims_path, out_checked='claims_checked.json', out_questions='questi
         if re.search(r'\b(10-K|10k|form|annual report|reported|filing|10-q|10q)\b', text, re.I) and re.search(r'20\d{2}', text):
             c_checked['status'] = 'verified'
         else:
-            # Try EDGAR if enabled
+            found = False
             if use_edgar:
                 try:
                     found = edgar.search_claim_phrase(text)
                     if found:
                         c_checked['status'] = 'verified'
-                    else:
-                        c_checked['status'] = 'unverifiable'
-                        questions.append(f"- {text} — source: {c.get('source_file')} p{c.get('page')}\n  Suggested question: Please confirm this claim and cite a filing or source.")
                 except Exception as e:
-                    print(f'EDGAR verification error: {e} — falling back to unverifiable')
-                    c_checked['status'] = 'unverifiable'
-                    questions.append(f"- {text} — source: {c.get('source_file')} p{c.get('page')}\n  Suggested question: Please confirm this claim and cite a filing or source.")
-            else:
+                    print(f'EDGAR verification error: {e} — continuing')
+            if not found and model_checks is not None:
+                # model_checks maps claim text -> {status, evidence}
+                m = model_checks.get(text)
+                if m:
+                    stat = m.get('status')
+                    if stat in ('verified','contradicted','unverifiable'):
+                        c_checked['status'] = stat
+                        if m.get('evidence'):
+                            c_checked['evidence'] = m.get('evidence')
+                        found = True
+            if not found:
                 c_checked['status'] = 'unverifiable'
+                # only add question for unverifiable
                 questions.append(f"- {text} — source: {c.get('source_file')} p{c.get('page')}\n  Suggested question: Please confirm this claim and cite a filing or source.")
         checked.append(c_checked)
     with open(out_checked, 'w', encoding='utf-8') as f:

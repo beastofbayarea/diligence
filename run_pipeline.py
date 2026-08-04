@@ -42,6 +42,13 @@ def stage1():
         claims = extractor.extract(inputs)
     out_path = os.path.join('demo','outputs','claims.json')
     extractor.write_claims(claims, out_path)
+    # Print claims table to console
+    try:
+        from src import utils
+        print('\nClaims extracted:')
+        utils.print_claims_table(claims)
+    except Exception:
+        pass
     print(f'Wrote {out_path} ({len(claims)} claims)')
 
 

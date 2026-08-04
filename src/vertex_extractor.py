@@ -68,6 +68,30 @@ def extract_with_vertex(pdf_paths):
         instances = [{"content": prompt_text}]
         params = {}
         response = client.predict(endpoint=model_name, instances=instances, parameters=params)
+        return response
+    except Exception as e:
+        print(f'Vertex extraction failed: {e}')
+        return None
+
+
+# helper to allow model_verifier to call Vertex with a prompt directly
+def call_model_prompt(prompt_text):
+    project = os.environ.get('GCP_PROJECT_ID')
+    region = os.environ.get('GCP_REGION', 'global')
+    model = os.environ.get('GEMINI_MODEL')
+    if not project or not model:
+        print('Vertex not configured for call_model_prompt')
+        return None
+    try:
+        from google.cloud.aiplatform.gapic import PredictionServiceClient
+        client = PredictionServiceClient(client_options={"api_endpoint": f"{region}-aiplatform.googleapis.com"})
+        model_name = f"projects/{project}/locations/{region}/models/{model}"
+        instances = [{"content": prompt_text}]
+        response = client.predict(endpoint=model_name, instances=instances)
+        return response
+    except Exception as e:
+        print(f'Vertex call_model_prompt failed: {e}')
+        return None
         # Response parsing: try to pull prediction payload text
         predictions = []
         for p in response.predictions:

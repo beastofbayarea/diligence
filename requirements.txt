@@ -1,2 +1,3 @@
 pypdf
 requests
+jsonschema
