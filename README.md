@@ -2,48 +2,80 @@ Diligence — prototype
 
 This repository implements a small prototype pipeline for extracting and verifying claims from PDF decks, following the IMPLEMENTATION_PLAN.md.
 
-Quick start:
+## Quick Start (Heuristic Extraction)
 
 1. Install dependencies:
+   ```bash
    pip install -r requirements.txt
+   ```
 
 2. Put 2–3 PDF decks in demo/inputs (deck1.pdf, deck2.pdf)
 
 3. Run full pipeline:
+   ```bash
    python run_pipeline.py
+   ```
 
 4. Inspect outputs in demo/outputs: claims.json, claims_checked.json, questions.md, memo.md
 
-Commands:
-- Stage-only: python run_pipeline.py --step 1|2|3
-- Benchmark: python bench.py labeled_dir
+## Model-Backed Extraction (Recommended)
 
-Files of interest:
-- src/extractor.py — PDF extractor (heuristic)
-- src/verify.py — verification heuristics
-- src/memo.py — memo generation
-- run_pipeline.py — pipeline driver
-- scripts/push-all.ps1 — helper to commit & push
+To use **Google Gemini API** for improved claim extraction and verification:
 
-See IMPLEMENTATION_PLAN.md for the roadmap and demo script.
-## Vertex AI (Gemini) — model extraction
+1. Get a free Gemini API key: https://makersuite.google.com/app/apikeys
+2. Create `.env` file in repo root:
+   ```bash
+   MODEL_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+   GEMINI_API_KEY=your-api-key-here
+   ```
+3. Run the pipeline:
+   ```bash
+   python run_pipeline.py
+   ```
 
-Configure environment (example .env or exported variables):
+See [docs/SETUP_GEMINI_API.md](docs/SETUP_GEMINI_API.md) for detailed setup instructions.
 
-GCP_PROJECT_ID=cent-capital
-GOOGLE_APPLICATION_CREDENTIALS=service-account-key.json
-GCP_REGION=global
-GEMINI_MODEL=gemini-flash-latest
+## Commands
 
-Install the Vertex AI client:
+- **Full pipeline:** `python run_pipeline.py`
+- **Stage-only:** `python run_pipeline.py --step 1|2|3` (1=extract, 2=verify, 3=memo)
+- **Benchmark:** `python bench.py bench/` (requires labeled dataset)
 
-pip install google-cloud-aiplatform
+## Files of Interest
 
-Run the model-backed extraction (pipeline prefers Vertex when configured):
+- `src/extractor.py` — PDF text extraction with heuristics
+- `src/model_extractor.py` — Model-backed claim extraction (Gemini or Vertex)
+- `src/verify.py` — Claim verification (heuristics + EDGAR + model)
+- `src/memo.py` — Memo generation from verified claims
+- `run_pipeline.py` — Pipeline orchestrator
+- `bench.py` — Precision/recall evaluator
 
-python run_pipeline.py --step 1
+## Architecture
 
-Run the full pipeline:
+The pipeline has three stages:
 
-python run_pipeline.py
+1. **Extract** — Extract claims from PDFs (heuristic or model-based)
+2. **Verify** — Verify claims (heuristics, EDGAR search, model-based)
+3. **Memo** — Generate investment memo from verified claims
 
+Each stage falls back gracefully if external services are unavailable.
+
+## Fallback Strategy
+
+If MODEL_API_KEY or GEMINI_API_KEY is not configured:
+- Extraction falls back to heuristic PDF analysis
+- Verification falls back to regex patterns
+- Pipeline always produces output (may be less accurate without models)
+
+## Configuration
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `MODEL_API_URL` | HTTP model endpoint | `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent` |
+| `GEMINI_API_KEY` | Model API key | (from Google AI Studio) |
+| `GCP_PROJECT_ID` | GCP project (optional) | `cent-capital` |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Service account path (optional) | `service-account-key.json` |
+| `USE_EDGAR` | Enable EDGAR verification | `1` |
+| `SEC_USER_AGENT` | EDGAR user agent | `MyApp/1.0 (you@example.com)` |
+
+See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the roadmap and requirements.
