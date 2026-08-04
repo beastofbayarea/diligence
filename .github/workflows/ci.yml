@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      USE_EDGAR: '1'
+      SEC_USER_AGENT: 'beastofbayarea-diligence-ci/1.0 (contact: infra@beastofbayarea)'
     steps:
       - uses: actions/checkout@v4
 
@@ -28,6 +31,7 @@ jobs:
 
       - name: Run verify+memo (steps 2+3)
         run: |
+          # EDGAR-enabled verification (USE_EDGAR=1)
           python run_pipeline.py --step 2 || echo "verify skipped or failed"
           python run_pipeline.py --step 3 || echo "memo skipped or failed"
 
