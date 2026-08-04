@@ -39,6 +39,16 @@ def extract_with_model(pdf_paths: List[str]) -> Optional[List[dict]]:
     """Return list of claims or None on config/error."""
     model_url = os.environ.get('MODEL_API_URL')
     api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('MODEL_API_KEY')
+    # If Vertex (GCP) config present, try Vertex extractor first
+    from os import environ
+    if environ.get('GCP_PROJECT_ID') and environ.get('GEMINI_MODEL'):
+        try:
+            from src import vertex_extractor
+            vres = vertex_extractor.extract_with_vertex(pdf_paths)
+            if vres is not None:
+                return vres
+        except Exception as e:
+            print(f'Vertex extractor error: {e} — falling back to HTTP model URL if available')
     if not model_url or not api_key:
         print('Model extractor not configured (MODEL_API_URL or GEMINI_API_KEY missing).')
         return None
