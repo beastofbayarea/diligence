@@ -26,3 +26,24 @@ Files of interest:
 - scripts/push-all.ps1 — helper to commit & push
 
 See IMPLEMENTATION_PLAN.md for the roadmap and demo script.
+## Vertex AI (Gemini) — model extraction
+
+Configure environment (example .env or exported variables):
+
+GCP_PROJECT_ID=cent-capital
+GOOGLE_APPLICATION_CREDENTIALS=service-account-key.json
+GCP_REGION=global
+GEMINI_MODEL=gemini-flash-latest
+
+Install the Vertex AI client:
+
+pip install google-cloud-aiplatform
+
+Run the model-backed extraction (pipeline prefers Vertex when configured):
+
+python run_pipeline.py --step 1
+
+Run the full pipeline:
+
+python run_pipeline.py
+
