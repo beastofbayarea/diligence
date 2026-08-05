@@ -58,20 +58,118 @@ def extract_with_vertex(pdf_paths):
     except Exception:
         prompt_text = json.dumps({'files': files_payload})[:1000]
     # Call Vertex AI prediction
+    # First try the google.generativeai client if available (generative models)
+    try:
+        import google.generativeai as genai
+        # Attempt to use application default credentials when no API key is provided
+        try:
+            genai.configure()
+        except Exception:
+            pass
+        try:
+            resp = genai.generate_text(model=model, prompt=prompt_text)
+            return resp
+        except Exception:
+            try:
+                resp = genai.generate(model=model, input=prompt_text)
+                return resp
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Next try REST call to Vertex AI predict endpoint using OAuth2 ADC token
+    try:
+        import google.auth
+        from google.auth.transport.requests import Request as AuthRequest
+        creds, gproject = google.auth.default()
+        # refresh to obtain token
+        auth_req = AuthRequest()
+        creds.refresh(auth_req)
+        token = creds.token
+        import requests as _req
+        # Try several model resource name variants
+        candidates = []
+        if model.startswith('projects/'):
+            candidates.append(model)
+        else:
+            candidates.append(f"projects/{project}/locations/{region}/models/{model}")
+            candidates.append(f"projects/{project}/locations/global/publishers/google/models/{model}")
+            candidates.append(f"projects/{project}/locations/{region}/publishers/google/models/{model}")
+        # Build endpoint URL and try
+        for model_name in candidates:
+            # model_name may be full resource or path; strip leading 'projects/' if present when building URL
+            try:
+                # extract the model id path after 'projects/' to form URL
+                if model_name.startswith('projects/'):
+                    url = f"https://{region}-aiplatform.googleapis.com/v1/{model_name}:predict"
+                else:
+                    url = f"https://{region}-aiplatform.googleapis.com/v1/projects/{project}/locations/{region}/models/{model}:predict"
+                headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
+                body = {'instances': [{ 'content': prompt_text }], 'parameters': {}}
+                r = _req.post(url, headers=headers, json=body, timeout=120)
+                if r.status_code == 200:
+                    try:
+                        return r.json()
+                    except Exception:
+                        return r.text
+                else:
+                    # continue to next candidate
+                    continue
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    # Next try the high-level aiplatform.Model.predict API
     try:
         from google.cloud import aiplatform
+        aiplatform.init(project=project, location=region)
+        # Determine model resource name variants to try
+        candidates = []
+        if model.startswith('projects/'):
+            candidates.append(model)
+        else:
+            candidates.append(f"projects/{project}/locations/{region}/models/{model}")
+            candidates.append(f"projects/{project}/locations/global/publishers/google/models/{model}")
+            candidates.append(f"projects/{project}/locations/{region}/publishers/google/models/{model}")
+        for cand in candidates:
+            try:
+                m = aiplatform.Model(cand)
+                resp = m.predict(instances=[{"content": prompt_text}])
+                return resp
+            except Exception:
+                continue
+    except Exception:
+        pass
+    # Fallback to PredictionServiceClient with multiple endpoint/model resource attempts
+    try:
         from google.cloud.aiplatform.gapic import PredictionServiceClient
-        # Client will pick up GOOGLE_APPLICATION_CREDENTIALS from env
-        client = PredictionServiceClient(client_options={"api_endpoint": f"{region}-aiplatform.googleapis.com"})
-        # Model resource name: projects/{project}/locations/{region}/models/{model}
-        model_name = f"projects/{project}/locations/{region}/models/{model}"
-        instances = [{"content": prompt_text}]
-        params = {}
-        response = client.predict(endpoint=model_name, instances=instances, parameters=params)
-        return response
+        # Try a few api endpoints commonly used
+        endpoints = [f"{region}-aiplatform.googleapis.com", f"{region}-aiplatform.googleapis.com:443", 'us-central1-aiplatform.googleapis.com']
+        model_candidates = []
+        if model.startswith('projects/'):
+            model_candidates.append(model)
+        else:
+            model_candidates.append(f"projects/{project}/locations/{region}/models/{model}")
+            model_candidates.append(f"projects/{project}/locations/global/publishers/google/models/{model}")
+            model_candidates.append(f"projects/{project}/locations/{region}/publishers/google/models/{model}")
+        for ep in endpoints:
+            try:
+                client = PredictionServiceClient(client_options={"api_endpoint": ep})
+            except Exception:
+                continue
+            instances = [{"content": prompt_text}]
+            params = {}
+            for model_name in model_candidates:
+                try:
+                    resp = client.predict(endpoint=model_name, instances=instances, parameters=params)
+                    return resp
+                except Exception:
+                    continue
     except Exception as e:
         print(f'Vertex extraction failed: {e}')
-        return None
+    return None
 
 
 # helper to allow model_verifier to call Vertex with a prompt directly
@@ -82,16 +180,52 @@ def call_model_prompt(prompt_text):
     if not project or not model:
         print('Vertex not configured for call_model_prompt')
         return None
+    # Try high-level aiplatform.Model.predict first
+    try:
+        from google.cloud import aiplatform
+        aiplatform.init(project=project, location=region)
+        candidates = []
+        if model.startswith('projects/'):
+            candidates.append(model)
+        else:
+            candidates.append(f"projects/{project}/locations/{region}/models/{model}")
+            candidates.append(f"projects/{project}/locations/global/publishers/google/models/{model}")
+            candidates.append(f"projects/{project}/locations/{region}/publishers/google/models/{model}")
+        for cand in candidates:
+            try:
+                m = aiplatform.Model(cand)
+                resp = m.predict(instances=[{"content": prompt_text}])
+                return resp
+            except Exception:
+                continue
+    except Exception:
+        pass
+    # Fallback to PredictionServiceClient
     try:
         from google.cloud.aiplatform.gapic import PredictionServiceClient
-        client = PredictionServiceClient(client_options={"api_endpoint": f"{region}-aiplatform.googleapis.com"})
-        model_name = f"projects/{project}/locations/{region}/models/{model}"
-        instances = [{"content": prompt_text}]
-        response = client.predict(endpoint=model_name, instances=instances)
-        return response
+        endpoints = [f"{region}-aiplatform.googleapis.com", f"{region}-aiplatform.googleapis.com:443", 'us-central1-aiplatform.googleapis.com']
+        model_candidates = []
+        if model.startswith('projects/'):
+            model_candidates.append(model)
+        else:
+            model_candidates.append(f"projects/{project}/locations/{region}/models/{model}")
+            model_candidates.append(f"projects/{project}/locations/global/publishers/google/models/{model}")
+            model_candidates.append(f"projects/{project}/locations/{region}/publishers/google/models/{model}")
+        for ep in endpoints:
+            try:
+                client = PredictionServiceClient(client_options={"api_endpoint": ep})
+            except Exception:
+                continue
+            instances = [{"content": prompt_text}]
+            for model_name in model_candidates:
+                try:
+                    resp = client.predict(endpoint=model_name, instances=instances)
+                    return resp
+                except Exception:
+                    continue
     except Exception as e:
         print(f'Vertex call_model_prompt failed: {e}')
-        return None
+    return None
         # Response parsing: try to pull prediction payload text
         predictions = []
         for p in response.predictions:

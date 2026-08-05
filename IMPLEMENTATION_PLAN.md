@@ -11,7 +11,7 @@
 No Drive, no auth, no CLI. Three PDFs in a local folder.
 
 - [ ] Gemini Flash file upload, two or three PDFs in a **single call**
-- [ ] Response schema returning `claim`, `source_file`, `page`, `type`
+- [x] Response schema returning `claim`, `source_file`, `page`, `type`
 - [ ] Print the claims table to console
 - [ ] Write `claims.json`
 
@@ -76,7 +76,7 @@ elsewhere.
 ## Demo script — ten minutes
 
 | Min | Beat |
-|---|---|
+| --- | --- |
 | 1 | **Show the folder.** "A real deal, assembled in five minutes." |
 | 2 | **Run extract live.** Claims appear with page numbers. |
 | 2 | **Open `questions.md`.** "This is the part I care about — everything the model could not confirm becomes my founder call agenda." |
