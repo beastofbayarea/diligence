@@ -1,1 +1,0 @@
-Bench dataset directory — contains ground-truth claims and extracted outputs for evaluation.\n\nNaming convention:\n- <deckname>.claims.json  (ground-truth list of claim objects)\n- <deckname>.extracted.json  (extractor output to compare)\n\nRun: python bench.py bench\n
