@@ -23,18 +23,23 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || true
+          pip install -r requirements.txt
+
+      - name: Verify Python syntax
+        run: |
+          python -m py_compile run_pipeline.py bench.py src/*.py
 
       - name: Run extractor (step 1)
         run: |
-          python run_pipeline.py --step 1 || echo "No PDFs or extractor failed"
+          python run_pipeline.py --step 1
 
       - name: Run verify+memo (steps 2+3)
         run: |
           # EDGAR-enabled verification (USE_EDGAR=1)
-          python run_pipeline.py --step 2 || echo "verify skipped or failed"
-          python run_pipeline.py --step 3 || echo "memo skipped or failed"
+          python run_pipeline.py --step 2
+          python run_pipeline.py --step 3
 
       - name: Run bench if available
         run: |
-          if [ -d bench ]; then python bench.py bench || true; else echo "No bench folder"; fi
+          if [ -d bench ]; then python bench.py bench; else echo "No bench folder"; fi
+

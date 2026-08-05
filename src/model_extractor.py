@@ -70,42 +70,61 @@ def extract_with_model(pdf_paths: List[str]) -> Optional[List[dict]]:
             'required': ['claim', 'source_file', 'page']
         }
     }
-    # Use prompts helper if available to build a clear prompt
+    headers = {'Content-Type': 'application/json'}
+    url = model_url
+    if 'generativelanguage.googleapis.com' in model_url:
+        headers['x-goog-api-key'] = api_key
+        if 'key=' not in url:
+            url += ('&' if '?' in url else '?') + f'key={api_key}'
+    else:
+        headers['Authorization'] = f'Bearer {api_key}'
+
     try:
         from src import prompts
         prompt_text = prompts.build_prompt(files_payload)
-        payload = {
-            'files': files_payload,
-            'response_schema': response_schema,
-            'prompt': prompt_text
-        }
     except Exception:
-        payload = {
-            'files': files_payload,
-            'response_schema': response_schema,
-            'instructions': 'Extract falsifiable claims from these PDFs. Return JSON matching response_schema.'
+        prompt_text = json.dumps({'files': files_payload})
+
+    payload = {
+        'contents': [{
+            'parts': [{'text': prompt_text}]
+        }],
+        'generationConfig': {
+            'responseMimeType': 'application/json'
         }
-    headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
+    }
     try:
-        resp = requests.post(model_url, headers=headers, data=json.dumps(payload), timeout=120)
+        resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
         resp.raise_for_status()
         data = resp.json()
-        # Model might return wrapped structure; try to find top-level array
-        if isinstance(data, dict) and 'claims' in data:
-            claims = data['claims']
-        elif isinstance(data, list):
+        claims = None
+        if isinstance(data, list):
             claims = data
-        else:
-            # Attempt to parse a JSON string in 'content' or similar
-            if isinstance(data, dict) and 'content' in data:
+        elif isinstance(data, dict):
+            if 'candidates' in data and data['candidates']:
+                part_text = data['candidates'][0].get('content', {}).get('parts', [{}])[0].get('text', '')
                 try:
-                    claims = json.loads(data['content'])
+                    claims = json.loads(part_text)
                 except Exception:
-                    print('Model response parsing failed')
-                    return None
-            else:
-                print('Unexpected model response format')
-                return None
+                    import re
+                    m = re.search(r'(\[\s*\{.*\}\s*\])', part_text, re.S)
+                    if m:
+                        claims = json.loads(m.group(1))
+            elif 'claims' in data:
+                claims = data['claims']
+            elif 'content' in data:
+                if isinstance(data['content'], str):
+                    try:
+                        claims = json.loads(data['content'])
+                    except Exception:
+                        pass
+                elif isinstance(data['content'], list):
+                    claims = data['content']
+
+        if claims is None:
+            print('Unexpected model response format')
+            return None
+
         # Validate schema if possible
         try:
             from src import prompts, utils
@@ -127,6 +146,7 @@ def extract_with_model(pdf_paths: List[str]) -> Optional[List[dict]]:
     except Exception as e:
         print(f'Model extraction failed: {e}')
         return None
+
 
 
 if __name__ == '__main__':

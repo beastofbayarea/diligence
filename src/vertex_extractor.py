@@ -220,16 +220,22 @@ def call_model_prompt(prompt_text):
             for model_name in model_candidates:
                 try:
                     resp = client.predict(endpoint=model_name, instances=instances)
-                    return resp
+                    return _parse_vertex_response(resp)
                 except Exception:
                     continue
     except Exception as e:
         print(f'Vertex call_model_prompt failed: {e}')
     return None
-        # Response parsing: try to pull prediction payload text
-        predictions = []
+
+
+def _parse_vertex_response(response):
+    if response is None:
+        return None
+    if isinstance(response, list):
+        return response
+    predictions = []
+    if hasattr(response, 'predictions'):
         for p in response.predictions:
-            # p may be a dict-like; try to find 'content' or 'output' fields
             if isinstance(p, dict):
                 for k in ('content', 'output', 'text', 'response'):
                     if k in p and isinstance(p[k], str):
@@ -240,27 +246,22 @@ def call_model_prompt(prompt_text):
                                 break
                         except Exception:
                             continue
-        if not predictions:
-            # try to interpret the whole response as text
-            try:
-                text_resp = str(response)
-                # attempt to find JSON substring
-                import re
-                m = re.search(r'(\[\s*\{.*\}\s*\])', text_resp, re.S)
-                if m:
-                    predictions = json.loads(m.group(1))
-            except Exception:
-                pass
-        out = []
-        for c in predictions:
-            if not isinstance(c, dict):
-                continue
-            if 'claim' in c and 'source_file' in c and 'page' in c:
-                out.append({'claim': c['claim'], 'source_file': c['source_file'], 'page': int(c['page']), 'type': c.get('type','model')})
-        return out
-    except Exception as e:
-        print(f'Vertex extraction failed: {e}')
-        return None
+    if not predictions:
+        try:
+            text_resp = str(response)
+            import re
+            m = re.search(r'(\[\s*\{.*\}\s*\])', text_resp, re.S)
+            if m:
+                predictions = json.loads(m.group(1))
+        except Exception:
+            pass
+    out = []
+    for c in predictions:
+        if not isinstance(c, dict):
+            continue
+        if 'claim' in c and 'source_file' in c and 'page' in c:
+            out.append({'claim': c['claim'], 'source_file': c['source_file'], 'page': int(c['page']), 'type': c.get('type', 'model')})
+    return out if out else None
 
 
 if __name__ == '__main__':
@@ -271,3 +272,4 @@ if __name__ == '__main__':
         print('Vertex extractor not run or failed')
     else:
         print(f'Vertex extracted {len(res)} claims')
+

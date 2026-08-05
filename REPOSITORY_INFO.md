@@ -94,11 +94,10 @@ diligence/
 
 ## Documentation
 
-- `README.md` — Overview and quick start
-- `IMPLEMENTATION_PLAN.md` — Original requirements and roadmap
-- `GEMINI_API_SETUP.md` — Step-by-step Gemini API configuration
-- `docs/SETUP_GEMINI_API.md` — Detailed setup guide
-- `docs/IMPLEMENTATION_STATUS.md` — Completion status and architecture
+- `README.md` — Overview, model options, and quick start guide
+- `CONFIG_REFERENCE.md` — Configuration settings and environment variables
+- `FEATURE_ROADMAP_RICE.md` — Feature roadmap analyzed with the RICE framework
+
 
 ## Contributing
 

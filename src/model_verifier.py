@@ -52,28 +52,55 @@ def verify_with_model(claims):
     # Try HTTP model_url
     if not model_url or not api_key:
         return None
-    headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
-    payload = {'prompt': prompt, 'response_schema': RESPONSE_SCHEMA}
+    headers = {'Content-Type': 'application/json'}
+    url = model_url
+    if 'generativelanguage.googleapis.com' in model_url:
+        headers['x-goog-api-key'] = api_key
+        if 'key=' not in url:
+            url += ('&' if '?' in url else '?') + f'key={api_key}'
+    else:
+        headers['Authorization'] = f'Bearer {api_key}'
+
+    payload = {
+        'contents': [{
+            'parts': [{'text': prompt}]
+        }],
+        'generationConfig': {
+            'responseMimeType': 'application/json'
+        }
+    }
     try:
-        resp = requests.post(model_url, headers=headers, data=json.dumps(payload), timeout=60)
+        resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
         resp.raise_for_status()
         data = resp.json()
-        # parse
+        parsed = None
         if isinstance(data, list):
             parsed = data
-        elif isinstance(data, dict) and 'claims' in data:
-            parsed = data['claims']
-        elif isinstance(data, dict) and 'content' in data:
-            try:
-                parsed = json.loads(data['content'])
-            except Exception:
-                return None
-        else:
-            return None
+        elif isinstance(data, dict):
+            if 'candidates' in data and data['candidates']:
+                part_text = data['candidates'][0].get('content', {}).get('parts', [{}])[0].get('text', '')
+                try:
+                    parsed = json.loads(part_text)
+                except Exception:
+                    import re
+                    m = re.search(r'(\[\s*\{.*\}\s*\])', part_text, re.S)
+                    if m:
+                        parsed = json.loads(m.group(1))
+            elif 'claims' in data:
+                parsed = data['claims']
+            elif 'content' in data:
+                if isinstance(data['content'], str):
+                    try:
+                        parsed = json.loads(data['content'])
+                    except Exception:
+                        pass
+                elif isinstance(data['content'], list):
+                    parsed = data['content']
         return _parse_model_verification_response(parsed)
     except Exception as e:
         print(f'Model verification failed: {e}')
         return None
+
 
 
 def _parse_model_verification_response(parsed):

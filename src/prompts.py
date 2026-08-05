@@ -35,11 +35,11 @@ def build_prompt(files_payload):
     parts = ["Extract falsifiable claims from the following documents. Return a JSON array matching the schema exactly."]
     for f in files_payload:
         parts.append(f"FILE: {f.get('name')} — {len(f.get('pages',[]))} pages")
-        # include first 1-2 lines of each page to keep payload small
-        for p in f.get('pages', [])[:2]:
-            snippet = p.get('text','').replace('\n',' ')[:300]
-            if snippet.strip():
-                parts.append(f"PAGE {p.get('page')} snippet: {snippet}")
+        for p in f.get('pages', []):
+            text = p.get('text', '').strip()
+            if text:
+                parts.append(f"PAGE {p.get('page')}:\n{text}")
     parts.append('\nSchema: ' + str(RESPONSE_SCHEMA))
     parts.append('\nInstructions: ' + MODEL_PROMPT_TEMPLATE)
     return '\n\n'.join(parts)
+
