@@ -14,13 +14,20 @@ import json
 import re
 import os
 
-# Optional EDGAR integration
+# Optional EDGAR & FMP integrations
 try:
     from src import edgar
     EDGAR_AVAILABLE = True
 except Exception:
     edgar = None
     EDGAR_AVAILABLE = False
+
+try:
+    from src import fmp
+    FMP_AVAILABLE = True
+except Exception:
+    fmp = None
+    FMP_AVAILABLE = False
 
 
 def verify(claims_path, out_checked='claims_checked.json', out_questions='questions.md'):
@@ -29,6 +36,8 @@ def verify(claims_path, out_checked='claims_checked.json', out_questions='questi
     checked = []
     questions = ['# Questions (unverifiable claims)\n']
     use_edgar = os.environ.get('USE_EDGAR') == '1' and EDGAR_AVAILABLE
+    use_fmp = FMP_AVAILABLE and bool(os.environ.get('FMP_API_KEY') or os.environ.get('FINANCIAL_MODELING_PREP_API_KEY'))
+    
     # Prepare for optional model-based verification
     try:
         from src import model_verifier
@@ -49,7 +58,15 @@ def verify(claims_path, out_checked='claims_checked.json', out_questions='questi
             c_checked['status'] = 'verified'
         else:
             found = False
-            if use_edgar:
+            if use_fmp:
+                try:
+                    found = fmp.verify_financial_claim(text)
+                    if found:
+                        c_checked['status'] = 'verified'
+                        c_checked['evidence'] = 'Verified via Financial Modeling Prep (FMP) market data'
+                except Exception as e:
+                    print(f'FMP verification error: {e} — continuing')
+            if not found and use_edgar:
                 try:
                     found = edgar.search_claim_phrase(text)
                     if found:
