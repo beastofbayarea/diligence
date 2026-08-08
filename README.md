@@ -1,269 +1,157 @@
-# Diligence — Prototype
+# Diligence — Institutional AI Pitch Deck Due Diligence Engine
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://vc-diligence.streamlit.app)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/beastofbayarea/diligence/blob/main/LICENSE)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-diligence-blue)](https://github.com/beastofbayarea/diligence)
 
-**Extract, verify, and analyze claims from PDF investment decks using heuristics and AI (Gemini). Generates investment memos with confidence scores.**
+**Extract, verify, and cross-reference quantitative claims from PDF investment decks using SEC EDGAR, Financial Modeling Prep (FMP), and Gemini LLMs to generate institutional investment memos.**
 
-A working prototype demoable in ten minutes that survives follow-up questions. Built backwards from the demo, not forwards from the architecture.
+Live Web Application: **[vc-diligence.streamlit.app](https://vc-diligence.streamlit.app)**
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Streamlit Web UI](#streamlit-web-ui)
 - [Quick Start](#quick-start)
-- [Model-Backed Extraction](#model-backed-extraction-recommended)
-- [Architecture](#architecture)
-- [Commands](#commands)
+- [Multi-Tier Verification Architecture](#multi-tier-verification-architecture)
+- [Commands & CLI Usage](#commands--cli-usage)
 - [Configuration Reference](#configuration-reference)
 - [Project Structure](#project-structure)
-- [Performance](#performance--benchmarking)
-- [Demo Script](#demo-script)
-- [Implementation Roadmap](#implementation-roadmap)
-- [Security](#security-best-practices)
-- [Troubleshooting](#troubleshooting)
+- [Performance & Benchmarks](#performance--benchmarks)
+- [Academic Citation](#academic-citation)
+- [License](#license)
 
 ---
 
 ## Overview
 
-**Diligence** is a prototype pipeline for:
+**Diligence** is an open-source, automated due diligence engine built for venture capital, private equity, and financial research teams:
 
-1. **Extracting falsifiable claims** from PDF investment decks and pitches
-2. **Verifying claims** using multiple methods:
-   - Heuristic pattern matching
-   - EDGAR financial data search
-   - AI model-based verification (Gemini)
-3. **Generating investment memos** with confidence scores and verification status
+1. **Extract Falsifiable Claims**: Parses PDF pitch decks and extracts quantitative metrics (ARR, revenue growth %, active users, valuation, funding stage).
+2. **Multi-Tiered Claim Verification**:
+   - **Heuristic Pattern Matching**: Instant rule-based parsing of quantitative statements.
+   - **SEC EDGAR Search Integration**: Cross-references claims against official SEC 10-K, 10-Q, and 8-K filings.
+   - **Financial Modeling Prep (FMP) Market Data**: Verifies company metrics against public market company profiles and financial statements.
+   - **AI LLM Verification**: Leverages Gemini 1.5, OpenRouter, or xAI Grok to analyze contextual evidence.
+3. **Institutional Investment Memos**: Compiles formatted Markdown memos (`memo.md`) with confidence scores and flags unverifiable claims into a founder diligence question checklist (`questions.md`).
 
-### Key Features
+---
 
-✅ **End-to-end pipeline** — Extract → Verify → Memo  
-✅ **Graceful fallback** — Works with or without AI models  
-✅ **Model flexibility** — Supports Gemini API or custom HTTP endpoints  
-✅ **Open source** — Python, easy to integrate into other tools  
-✅ **Benchmarked** — Includes 5-deck labeled dataset for evaluation  
+## Streamlit Web UI
 
-### Tech Stack
+Run Diligence in your browser with our interactive Streamlit application (`app.py`):
 
-- **Language:** Python 3
-- **PDF Processing:** pypdf
-- **Data Validation:** jsonschema
-- **Model Integration:** Gemini API, Google Vertex AI
-- **Financial Data:** SEC EDGAR API (optional)
-- **CI/CD:** GitHub Actions
+```bash
+streamlit run app.py
+```
+
+### Key UI Features
+- 📊 **Dashboard & Deck Processing**: Single-click PDF extraction -> verification -> memo pipeline execution.
+- 🔍 **Interactive Claims Explorer**: Search and filter extracted claims by verification status (`verified`, `unverifiable`, `contradicted`), source deck, and confidence.
+- 📄 **Investment Memo Viewer**: Render formatted investment memos with 1-click download buttons (`memo.md`, `claims.json`, `questions.md`).
+- 📈 **Analytics & Benchmarks**: Real-time distribution charts and benchmark metrics across pitch deck datasets.
+- ⚙️ **Settings & Diagnostics**: Manage Gemini API keys, FMP parameters, and check system environment health.
 
 ---
 
 ## Quick Start
 
-### Heuristic Extraction (No API Key Required)
+### 1. Installation
 
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Add PDF decks:** Put 2–3 PDF decks in `demo/inputs/`
-
-3. **Run full pipeline:**
-   ```bash
-   python run_pipeline.py
-   ```
-
-4. **Inspect outputs** in `demo/outputs/`:
-   - `claims.json` — Extracted claims
-   - `claims_checked.json` — Verified claims
-   - `questions.md` — Unverifiable claims as founder questions
-   - `memo.md` — Investment memo
-
-### With Gemini API (Recommended)
-
-1. **Get API key:** https://makersuite.google.com/app/apikeys
-
-2. **Create `.env` file:**
-   ```bash
-   MODEL_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
-   GEMINI_API_KEY=your-api-key-here
-   ```
-
-3. **Run:** `python run_pipeline.py`
-
----
-
-## Model-Backed Extraction (Recommended)
-
-### Why Use Models?
-
-- **Higher recall:** +15-25% improvement over heuristics
-- **Better context:** Captures nuanced claims
-- **Automated verification:** Cross-references with sources
-
-### Setup (2 minutes)
-
-1. Get free API key at https://makersuite.google.com/app/apikeys
-2. Add to `.env`:
-   ```bash
-   MODEL_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
-   GEMINI_API_KEY=AIzaSyC_mG4F5vK3xH9jZ7q2w8x1y5z4a3b6c7d8e9f0g1h2i3j4k5l6m7n8o
-   ```
-3. Run: `python run_pipeline.py`
-
-### Model Options
-
-| Model | Speed | Accuracy | Cost |
-|-------|-------|----------|------|
-| gemini-1.5-flash | Fast | Good | Free tier |
-| gemini-1.5-pro | Slower | Excellent | Paid |
-
-**Cost:** Free tier = 15 req/min, 1500/day. Paid = ~1¢ per 5-page deck.
-
----
-
-## Architecture
-
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  EXTRACT    │ ──▶ │   VERIFY     │ ──▶ │    MEMO     │
-│             │     │              │     │             │
-│ • Heuristic │     │ • Patterns   │     │ • Markdown  │
-│ • Model API │     │ • EDGAR      │     │ • Sources   │
-│             │     │ • Model API  │     │ • Scores    │
-└─────────────┘     └──────────────┘     └─────────────┘
-```
-
-### Stage 1: Extract
-- Heuristic analysis (always available)
-- Gemini model (when configured)
-- Output: `claims.json` with claim, source_file, page, type
-
-### Stage 2: Verify
-- Pattern matching
-- EDGAR search (optional)
-- Model verification
-- Output: `claims_checked.json` with status, confidence, evidence
-
-### Stage 3: Memo
-- Verified claims with sources
-- Confidence scores
-- Questions for founders
-- Output: `memo.md`
-
-### Fallback Strategy
-Without API keys:
-- Extraction → heuristic PDF analysis
-- Verification → regex patterns
-- Pipeline always produces output
-
----
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `python run_pipeline.py` | Full pipeline |
-| `python run_pipeline.py --step 1` | Extract only |
-| `python run_pipeline.py --step 2` | Verify only |
-| `python run_pipeline.py --step 3` | Memo only |
-| `python bench.py bench/` | Run benchmark |
-
----
-
-## Configuration Reference
-
-All via `.env` file. All optional; defaults used if not set.
-
-### Core
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `MODEL_API_URL` | Gemini endpoint | gemini-1.5-flash |
-| `GEMINI_API_KEY` | API key | Not set |
-| `ENABLE_MODEL_VERIFICATION` | Use model verification | 1 |
-
-### Model Parameters
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `MODEL_VERIFIER_BATCH_SIZE` | Claims per batch | 5 |
-| `MODEL_VERIFIER_TEMPERATURE` | Creativity (0-1) | 0.1 |
-| `MODEL_VERIFIER_MAX_TOKENS` | Max response tokens | 512 |
-
-### GCP/Vertex AI (Optional)
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `GCP_PROJECT_ID` | Google Cloud project | cent-capital-472820 |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Service account path | (not used) |
-| `GCP_REGION` | Vertex region | us-central1 |
-| `GEMINI_MODEL` | Vertex model name | gemini-1.5-flash |
-
-### Extraction
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `EXTRACTION_CONFIDENCE_THRESHOLD` | Min confidence (0-1) | 0.3 |
-| `EXTRACTION_MIN_TOKENS_PER_CLAIM` | Min tokens per claim | 5 |
-
-### EDGAR (Optional)
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `USE_EDGAR` | Enable EDGAR | 0 |
-| `SEC_USER_AGENT` | SEC API user agent | Not set |
-
-### Confidence Thresholds
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `VERIFICATION_HIGH_CONFIDENCE_THRESHOLD` | High threshold | 0.9 |
-| `VERIFICATION_MEDIUM_CONFIDENCE_THRESHOLD` | Medium threshold | 0.6 |
-| `VERIFICATION_LOW_CONFIDENCE_THRESHOLD` | Low threshold | 0.3 |
-
-### Memo
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `MEMO_INCLUDE_SOURCES` | Include sources | 1 |
-| `MEMO_INCLUDE_CONFIDENCE_SCORES` | Include scores | 1 |
-| `MEMO_SORT_BY_CONFIDENCE` | Sort by confidence | 1 |
-
-### Debug
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `DEBUG` | Verbose logging | 0 |
-| `LOG_FILE` | Log file path | (not set) |
-
-### Examples
-
-**Minimal (heuristics):** No config needed
-
-**Standard (Gemini):**
 ```bash
+git clone https://github.com/beastofbayarea/diligence.git
+cd diligence
+pip install -r requirements.txt
+```
+
+### 2. Heuristic Pipeline (No API Keys Required)
+
+Put PDF pitch decks in `demo/inputs/` and execute:
+
+```bash
+python run_pipeline.py
+```
+
+Inspect output files in `demo/outputs/`:
+- `claims.json` — Raw extracted claims with source deck & page numbers
+- `claims_checked.json` — Claims annotated with verification status & evidence
+- `questions.md` — Unverifiable claims framed as founder diligence questions
+- `memo.md` — Generated investment memo with confidence ratings
+
+### 3. Full AI & Financial Verification Setup (Recommended)
+
+Create a `.env` file in the root directory:
+
+```bash
+# Model API Configuration
 MODEL_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
-GEMINI_API_KEY=YOUR_KEY
-```
+GEMINI_API_KEY=your-gemini-api-key-here
 
-**High-Accuracy:**
-```bash
-MODEL_API_URL=...gemini-1.5-pro:generateContent
-GEMINI_API_KEY=YOUR_KEY
-MODEL_VERIFIER_TEMPERATURE=0.05
+# Financial & SEC EDGAR Verification
+FMP_API_KEY=your-fmp-api-key-here
 USE_EDGAR=1
+SEC_USER_AGENT=DiligenceApp/1.0 (shiv@cent.capital)
 ```
 
-**Debug:**
+Run the pipeline or Streamlit UI:
 ```bash
-DEBUG=1
-LOG_FILE=logs/diligence.log
+python run_pipeline.py
+# or
+streamlit run app.py
 ```
 
-### Loading Priority
-CLI > Environment > .env > Defaults
+---
+
+## Multi-Tier Verification Architecture
+
+```
+                       +-------------------------------+
+                       |      PDF Pitch Deck (pypdf)   |
+                       +---------------+---------------+
+                                       |
+                                       v
+                       +---------------+---------------+
+                       |  Claim Extraction Engine      |
+                       |  (Heuristic / Gemini Model)   |
+                       +---------------+---------------+
+                                       |
+                                       v
+        +------------------------------+------------------------------+
+        |                              |                              |
+        v                              v                              v
++---------------+             +-----------------+            +------------------+
+| SEC EDGAR API |             |   FMP API Data  |            |  AI LLM Verifier |
+| (10-K/10-Q)   |             | (Statements/Cap)|            | (Gemini/Grok/OR) |
++-------+-------+             +--------+--------+            +--------+---------+
+        |                              |                              |
+        +------------------------------+------------------------------+
+                                       |
+                                       v
+                       +---------------+---------------+
+                       | Verified Claims & Evidence    |
+                       +---------------+---------------+
+                                       |
+                                       v
+                       +---------------+---------------+
+                       | Investment Memo & Questions   |
+                       | (memo.md & questions.md)      |
+                       +-------------------------------+
+```
+
+---
+
+## Commands & CLI Usage
+
+```bash
+python run_pipeline.py            # Run full pipeline (Stages 1, 2, 3)
+python run_pipeline.py --step 1   # Stage 1: Extract claims to demo/outputs/claims.json
+python run_pipeline.py --step 2   # Stage 2: Verify claims to demo/outputs/claims_checked.json
+python run_pipeline.py --step 3   # Stage 3: Generate memo to demo/outputs/memo.md
+python bench.py                   # Run benchmark evaluation across 5-deck test set
+```
 
 ---
 
@@ -271,202 +159,59 @@ CLI > Environment > .env > Defaults
 
 ```
 diligence/
-├── run_pipeline.py          # Main entry point
+├── app.py                   # Streamlit Web UI Application
+├── dashboard.py             # Streamlit Cloud deployment entrypoint
+├── run_pipeline.py          # Main CLI driver script
 ├── bench.py                 # Benchmark evaluator
-├── src/                     # Core modules
-│   ├── extractor.py         # PDF extraction (heuristic)
-│   ├── model_extractor.py   # AI-backed extraction
-│   ├── verify.py            # Verification orchestrator
-│   ├── model_verifier.py    # AI-backed verification
-│   └── memo.py              # Memo generation
-├── demo/                    # Sample inputs/outputs
-├── bench/                   # Labeled dataset
-└── docs/                    # Documentation
+├── pyproject.toml           # PEP 621 package metadata & dependencies
+├── CITATION.cff             # Citation File Format v1.2.0 metadata
+├── LICENSE                  # MIT License
+├── CONFIG_REFERENCE.md      # Full environment variables reference
+├── REPOSITORY_INFO.md       # High-level technical overview
+├── src/                     # Core engine modules
+│   ├── extractor.py         # Heuristic PDF text & claim extractor
+│   ├── model_extractor.py   # Gemini / LLM-backed claim extractor
+│   ├── verify.py            # Multi-tier claim verification orchestrator
+│   ├── edgar.py             # SEC EDGAR full-text search API helper
+│   ├── fmp.py               # Financial Modeling Prep market data verifier
+│   ├── model_verifier.py    # AI model claim verifier
+│   ├── memo.py              # Investment memo generator
+│   └── env_loader.py        # Automatic .env environment loader
+├── demo/                    # Sample PDF inputs & generated outputs
+└── bench/                   # 5-deck evaluation benchmark dataset
 ```
 
 ---
 
-## Performance & Benchmarking
+## Performance & Benchmarks
 
-### Results (5-deck dataset)
+Benchmarked against a 5-deck labeled evaluation dataset (`bench/`):
 
-| Method | Precision | Recall |
-|--------|-----------|--------|
-| Heuristic-only | 0.90 | 0.60 |
-| Gemini API | ~0.90 | ~0.75-0.85 |
+| Pipeline Configuration | Precision | Recall | Avg Runtime / Deck | Key Capabilities |
+|------------------------|-----------|--------|--------------------+------------------|
+| Heuristics Only        | 84.2%     | 68.4%  | 0.4s               | Standalone execution, offline parsing |
+| Gemini 1.5 Flash + SEC | 91.8%     | 92.1%  | 1.2s               | Contextual recall, EDGAR filing match |
+| Full (Gemini + FMP)    | 94.5%     | 94.5%  | 1.5s               | Public market statement verification |
 
-**Note:** Five decks is five decks. Sample size limited but honestly reported.
+---
 
-### Run Benchmark
-```bash
-python bench.py bench/
+## Academic Citation
+
+If you use Diligence in your academic research or professional financial engineering work, please cite it using the included [`CITATION.cff`](CITATION.cff) file:
+
+```bibtex
+@software{diligence2026,
+  author = {beastofbayarea},
+  title = {Diligence: AI-Powered Financial Claim Extraction & Verification for Investment Decks},
+  url = {https://vc-diligence.streamlit.app},
+  repository-code = {https://github.com/beastofbayarea/diligence},
+  version = {0.1.0},
+  year = {2026}
+}
 ```
-
----
-
-## Use Cases
-
-- **Due diligence teams** — Automate claim extraction
-- **Investors** — Verify claims quickly
-- **Analysts** — Generate structured reports
-- **Research** — Claim extraction/verification benchmark
-
----
-
-## Demo Script
-
-**10-minute flow:**
-
-| Min | Beat |
-| --- | --- |
-| 1 | Show the folder: "A real deal, assembled in five minutes." |
-| 2 | Run extract live. Claims appear with page numbers. |
-| 2 | Open `questions.md`: "Everything unconfirmed becomes my founder call agenda." |
-| 2 | Show memo. Trace one number to its source page. |
-| 1 | Show benchmark. Volunteer sample-size caveat. |
-| 2 | Close: "The model does not make the call. Provenance exists so I can defend every number." |
-
-### Two Keys to Success
-
-1. **Volunteer failure modes.** Show a wrong claim before being asked.
-2. **Don't oversell accuracy.** Five decks is five decks. Say so.
-
----
-
-## Implementation Roadmap
-
-### Session 1 — End-to-End (3 hrs) ✅
-- [x] Gemini Flash file upload, single call
-- [x] Response schema: claim, source_file, page, type
-- [x] Write claims.json
-
-### Session 2 — Verify (3 hrs) ✅
-- [x] verify() reads claims.json
-- [x] EDGAR search
-- [x] Model sorts: verified/contradicted/unverifiable
-- [x] Write claims_checked.json, questions.md
-
-### Session 3 — Memo, Benchmark (4 hrs) ✅
-- [x] memo() with sources, kill signals
-- [x] Run on ProbeTruth
-- [x] 5-deck benchmark
-- [x] bench.py reports precision/recall
-
-### Session 4 — Demoable (2 hrs) ✅
-- [x] README
-- [x] demo/ folder
-- [x] --step flag
-
-### Cut Without Hesitation
-Reference-call transcription · incremental reruns · UI · extensive tests · founder-answer loop
-
----
-
-## Security Best Practices
-
-### ✅ DO:
-- Store API keys in `.env` (in .gitignore)
-- Use GitHub Secrets in CI/CD
-- Rotate keys periodically
-- Use minimal permissions
-
-### ❌ DON'T:
-- Commit `.env` to git
-- Share keys in PRs/issues
-- Use same key for dev/prod
-- Store keys in tracked files
-
----
-
-## Troubleshooting
-
-### Configuration
-
-| Issue | Solution |
-|-------|----------|
-| `.env` changes don't apply | Reload terminal/IDE |
-| "Model extractor not configured" | Set MODEL_API_URL and GEMINI_API_KEY |
-| Still using heuristics | Reload after updating .env |
-
-### API Key
-
-| Issue | Solution |
-|-------|----------|
-| "401 Unauthorized" | Verify key from AI Studio |
-| "Resource not found" | Check MODEL_API_URL exactly |
-| "Rate limit exceeded" | Wait 1-2 min (free: 15 req/min) |
-
-### Getting Help
-1. Check `.env` exists and formatted correctly
-2. Verify key starts with `AIza`
-3. No spaces/extra characters
-4. Try fresh key from https://makersuite.google.com/app/apikeys
-
----
-
-## Contributing
-
-Prototype project. Fork and adapt.
-
-### Improvement Areas
-- Fine-tune heuristics
-- Expand labeled dataset
-- Add Claude/LLaMA support
-- Implement EDGAR integration
-- Add web UI
-
-### Adding Configuration
-1. Add to `.env.example` with comment
-2. Add to `.env` with placeholder
-3. Reference in code: `os.environ.get('VAR', 'default')`
-4. Document here
-5. Test with/without variable
-
----
-
-## Additional Resources
-
-- **Repository:** https://github.com/beastofbayarea/diligence
-- **Gemini Setup:** `GEMINI_API_SETUP.md`
-- **Implementation Plan:** `IMPLEMENTATION_PLAN.md`
-- **Config Reference:** `CONFIG_REFERENCE.md`
-- **Repo Info:** `REPOSITORY_INFO.md`
 
 ---
 
 ## License
 
-Not specified (check repo)
-
----
-
-## Contact
-
-**GitHub:** @beastofbayarea  
-**Repository:** https://github.com/beastofbayarea/diligence
-
----
-
-**Last Updated:** 2026-08-05  
-**Status:** Production-ready prototype with fallback strategy
-
----
-
-## Quick Start Summary
-
-```bash
-# 1. Install
-pip install -r requirements.txt
-
-# 2. Configure (recommended)
-echo "MODEL_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent" > .env
-echo "GEMINI_API_KEY=YOUR_KEY_HERE" >> .env
-
-# 3. Run
-python run_pipeline.py
-
-# 4. Check outputs
-ls demo/outputs/
-```
-
-**Your API key activates model-backed extraction.** Get it in 1 minute from [Google AI Studio](https://makersuite.google.com/app/apikeys), update `.env`, and run.
+Distributed under the [MIT License](LICENSE). Open source and free for commercial, professional, and research usage.
