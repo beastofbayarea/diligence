@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "Diligence: AI-Powered Financial Claim Extraction & Verification for Investment Decks"
+message: "If you use this software in your research or professional analysis, please cite it using the metadata from this file."
+type: software
+authors:
+  - alias: "beastofbayarea"
+    name: "Beast of Bay Area"
+repository-code: "https://github.com/beastofbayarea/diligence"
+url: "https://streamlit.app"
+abstract: "Diligence is an open-source automated due diligence pipeline that extracts falsifiable quantitative claims from PDF investment decks, verifies them using heuristics, SEC EDGAR data, and Gemini LLMs, and compiles structured investment memos with confidence scores."
+keywords:
+  - "financial due diligence"
+  - "claim extraction"
+  - "gemini api"
+  - "investment analysis"
+  - "sec edgar"
+  - "pdf processing"
+license: MIT
+version: "0.1.0"
+date-released: "2026-08-05"

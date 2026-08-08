@@ -1,3 +1,5 @@
 pypdf
 requests
 jsonschema
+streamlit
+pandas

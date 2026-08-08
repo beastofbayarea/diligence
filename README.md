@@ -1,7 +1,9 @@
 # Diligence — Prototype
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://streamlit.app)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/beastofbayarea/diligence/blob/main/LICENSE)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-diligence-blue)](https://github.com/beastofbayarea/diligence)
-[![Python](https://img.shields.io/badge/Python-3-blue)](https://python.org)
 
 **Extract, verify, and analyze claims from PDF investment decks using heuristics and AI (Gemini). Generates investment memos with confidence scores.**
 

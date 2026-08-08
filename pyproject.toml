@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diligence"
+version = "0.1.0"
+description = "Extract, verify, and analyze claims from PDF investment decks using heuristics and AI (Gemini). Generates investment memos with confidence scores."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "beastofbayarea" }
+]
+keywords = [
+  "financial-due-diligence",
+  "claim-extraction",
+  "gemini-api",
+  "investment-analysis",
+  "pdf-processing",
+  "ai-verification"
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Financial and Insurance Industry",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Office/Business :: Financial :: Investment"
+]
+dependencies = [
+  "pypdf>=3.0.0",
+  "jsonschema>=4.0.0",
+  "streamlit>=1.30.0",
+  "pandas>=2.0.0"
+]
+
+[project.urls]
+Homepage = "https://streamlit.app"
+Documentation = "https://github.com/beastofbayarea/diligence#readme"
+Repository = "https://github.com/beastofbayarea/diligence"
+"Issue Tracker" = "https://github.com/beastofbayarea/diligence/issues"
